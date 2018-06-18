@@ -38,17 +38,17 @@ router.get('/d3vdrsample', function(req, res, next) {
      var yyyy = newinserteddt.getFullYear();
      var year = yyyy.toString().substr(-2);
 	 
-    console.log(item.inserted_at);
-    console.log(year + '-' + month);
+  
     item.year = year; 
     item.quarter = getQuarter(month, year); 
     item.month = month + '-' + year; 
   });
-  // console.log(jsonData);
+ 
   u.chain(jsonData)
       .groupBy("status","year")
       .map(function(value, key){
           var yearWise = {};
+		  
           yearWise.year = key;
           yearWise.yearCount = u.size(value).toString();
           yearWise.quarterlist = [];
@@ -76,7 +76,66 @@ router.get('/d3vdrsample', function(req, res, next) {
 	});
 });
 
-
+router.get('/d3vdrsample/withparam/:datetime', function(req, res, next) {
+  var jsonData;
+	VdrAnalysis.find({}).exec(function (err, vdranalysiss) {
+	
+    if (err) {
+      console.log("Error:", err);
+    }
+    else {
+		
+	  jsonData = JSON.parse(JSON.stringify(vdranalysiss));
+	  
+    }
+   
+console.log("pass",req.params.datetime);   
+	
+  var jsonSingle = {};
+  var jsonRes = [];
+  u.map(jsonData, function(item){
+	 var newinserteddt = new Date(item.inserted_at);
+     var dd = newinserteddt.getDate();
+     var month = newinserteddt.getMonth()+1; //January is 0!
+     var yyyy = newinserteddt.getFullYear();
+     var year = yyyy.toString().substr(-2);
+	 
+   
+    item.year = year; 
+    item.quarter = getQuarter(month, year); 
+    item.month = month + '-' + year; 
+	
+	
+  });
+  // console.log(jsonData);
+  u.chain(jsonData)
+      .groupBy("status")
+	  .map(function(value, key){
+          var yearWise = {};
+          yearWise.year = key;
+          yearWise.yearCount = u.size(value).toString();
+          yearWise.quarterlist = [];
+		  
+		  
+          u.chain(value)
+            .groupBy("year")
+			.map(function(quarterData, quarterName){
+              var qdata = {};
+              qdata.quarter = quarterName;
+              qdata.quarterCount = u.size(quarterData).toString();
+              qdata.monthlist = [];
+              
+                yearWise.quarterlist.push(qdata);
+              });
+          jsonRes.push(yearWise);
+		  console.log(yearWise);
+        });
+  
+  
+  
+  res.send(JSON.stringify(jsonRes));
+	});
+});
 
 
 router.get('/d3jobsample', function(req, res, next) {
@@ -100,23 +159,24 @@ router.get('/d3jobsample', function(req, res, next) {
      var yyyy = newinserteddt.getFullYear();
      var year = yyyy.toString().substr(-2);
 	 
-    console.log(item.inserted_at);
-    console.log(year + '-' + month);
+   
     item.year = year; 
     item.quarter = getQuarter(month, year); 
     item.month = month + '-' + year; 
+	
   });
   // console.log(jsonData);
   u.chain(jsonData)
-      .groupBy("vesselschedule","year")
-      .map(function(value, key){
-          var yearWise = {};
+      .groupBy("year")
+      .map(function(value,key){
+		  var yearWise = {};
           yearWise.year = key;
           yearWise.yearCount = u.size(value).toString();
           yearWise.quarterlist = [];
           u.chain(value)
             .groupBy("vesselschedule","quarter")
             .map(function(quarterData, quarterName){
+				
               var qdata = {};
               qdata.quarter = quarterName;
               qdata.quarterCount = u.size(quarterData).toString();
@@ -141,20 +201,20 @@ router.get('/d3jobsample', function(req, res, next) {
 
 
 function getQuarter(month, year){
-  if(month == 'Jan' || month == 'Feb' || month == 'Mar'){
+	
+  if(month == '1' || month == '2' || month == '3'){
     return "Q1-" + year;
   }
-  if(month == 'Apr' || month == 'May' || month == 'Jun'){
+  if(month == '4' || month == '5' || month == '6'){
     return "Q2-" + year;
   }
-  if(month == 'Jul' || month == 'Aug' || month == 'Sep'){
+  if(month == '7' || month == '8' || month == '9'){
     return "Q3-" + year;
   }
-  if(month == 'Oct' || month == 'Nov' || month == 'Dec'){
+  if(month == '10' || month == '11' || month == '12'){
     return "Q4-" + year;
   }
 }
 
 
 module.exports = router;
-
